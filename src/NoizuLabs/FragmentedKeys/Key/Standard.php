@@ -12,7 +12,7 @@ class Standard {
     static protected $TAG_SEPERATOR = ":t";
     static protected $INDEX_SEPERATOR = "_";
 
-    public function __construct($key, $groupId, array $keyGroups = array()) {
+    public function __construct($key, array $keyGroups = array(), $groupId = "") {
         global $container;
         $this->key = $key;
         $this->groupId = $groupId;
@@ -28,10 +28,12 @@ class Standard {
         $this->keyGroups[$keyGroup->getGroupTag()] = $keyGroup;
     }
 
-    public function getKey()
+    public function getKey($hash = true)
     {
         $key =  $this->key . self::$INDEX_SEPERATOR . $this->groupId . self::$TAG_SEPERATOR . implode(self::$TAG_SEPERATOR, $this->gatherTags());
-        $key = md5($key);
+        if($hash) {
+             $key = md5($key);
+        }
         return $key;
     }
 

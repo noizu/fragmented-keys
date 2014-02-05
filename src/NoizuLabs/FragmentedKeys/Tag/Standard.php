@@ -51,6 +51,7 @@ class Standard implements FragmentedKeys\ITag
             }
         }
         $this->memcache = $container['memcache'];
+        $this->memcachePrefix = md5(isset( $container['memcachePrefix']) ? $container['memcachePrefix'] : "DefaultPrefix");
     }
 
     /**
@@ -89,7 +90,7 @@ class Standard implements FragmentedKeys\ITag
      */
     public function getTagName()
     {
-        return $this->groupName . self::$INDEX_SEPERATOR . $this->groupIndex;
+        return $this->groupName . self::$INDEX_SEPERATOR . $this->groupIndex . $this->memcachePrefix;
     }
 
     /**

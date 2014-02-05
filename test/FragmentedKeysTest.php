@@ -138,7 +138,7 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
         $tag2 = new Tag\Standard($this->tagNameB, $this->tagNameAEntityOne);
-        $theKey = new Key\Standard("ThisIsAKey", "" , array($tag,$tag2));
+        $theKey = new Key\Standard("ThisIsAKey", array($tag,$tag2));
 
         $expected = md5("ThisIsAKey_:t" . $tag->getFullTag() . ":t" . $tag2->getFullTag());
         $this->assertEquals($expected, $theKey->getKey());
@@ -150,7 +150,7 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
     public function GetKeyShouldWorkWithASingleTag()
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
-        $theKey = new Key\Standard("ThisIsAKey", "" , array($tag));
+        $theKey = new Key\Standard("ThisIsAKey", array($tag));
 
         $expected = md5("ThisIsAKey_:t" . $tag->getFullTag());
         $this->assertEquals($expected, $theKey->getKey());
@@ -163,13 +163,13 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
         $tag2 = new Tag\Standard($this->tagNameB, $this->tagNameAEntityOne);
-        $theKey = new Key\Standard("ThisIsAKey", "" , array($tag,$tag2));
+        $theKey = new Key\Standard("ThisIsAKey",  array($tag,$tag2));
 
         $firstKey = $theKey->getKey();
 
         $this->WaitForClockTick();
 
-        $theKey = new Key\Standard("ThisIsAKey", "" , array($tag,$tag2));
+        $theKey = new Key\Standard("ThisIsAKey", array($tag,$tag2));
         $secondKey = $theKey->getKey();
 
         $this->assertEquals($firstKey, $secondKey);
@@ -182,11 +182,11 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
         $tag2 = new Tag\Standard($this->tagNameB, $this->tagNameAEntityOne);
-        $theKey = new Key\Standard("ThisIsAKey", "" , array($tag,$tag2));
+        $theKey = new Key\Standard("ThisIsAKey",  array($tag,$tag2));
         $firstKey = $theKey->getKey();
         $tag2b = new Tag\Standard($this->tagNameB, $this->tagNameAEntityOne);
         $tag2b->Increment();
-        $theKey = new Key\Standard("ThisIsAKey", "" , array($tag,$tag2));
+        $theKey = new Key\Standard("ThisIsAKey",  array($tag,$tag2));
         $secondKey = $theKey->getKey();
         $this->assertNotEquals($firstKey, $secondKey);
     }
