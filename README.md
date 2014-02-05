@@ -48,3 +48,15 @@ Or you could just go crazy and invalidate all keys that rely on Global.Greating
               \
                \-[x]Target User
 ```    
+
+Setup Note
+==
+The code depends on Memcache being available and set on a global pimple container named $container. 
+
+```php
+global $container;
+$container = new \Pimple();
+$m = new \Memcache;
+$conn = $m->connect('127.0.0.1', '11211');
+$container['memcache'] = $m;
+```
