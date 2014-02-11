@@ -2,10 +2,9 @@
     "name": "noizu-labs/fragmented-keys",
     "description": "Fragmented Key Management and Invalidation Library for use with Memcache.",
     "require": {
-        "pimple/pimple":"*"
+        "pimple/pimple":"~1.1"
     },
     "require-dev": {
-        "pimple/pimple":"*"
     },
     "license": "mit",
     "authors": [
