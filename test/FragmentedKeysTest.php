@@ -19,8 +19,8 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         }
 
         if(!isset($container['memcache'])) {
-             $m = new \Memcache;
-             $conn = $m->connect('127.0.0.1', '11211');
+             $m = new \Memcached;
+             $conn = $m->addServer('127.0.0.1', '11211');
              $container['memcache'] = $m;
         }
 

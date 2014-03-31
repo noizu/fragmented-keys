@@ -51,7 +51,7 @@ class Standard {
             }
         }
 
-        $tags = $this->memcache->get($group_tags);
+        $tags = $this->memcache->getMulti($group_tags);
         foreach($this->keyGroups as $key => &$group) {
             if(array_key_exists($key, $tags))
             {
