@@ -4,8 +4,11 @@
     "require": {
         "pimple/pimple":"~1.1"
     },
-    "require-dev": {
+        "require-dev": {
     },
+    "config": {
+        "preferred-install": "dist"
+    }, 
     "license": "mit",
     "authors": [
         {
