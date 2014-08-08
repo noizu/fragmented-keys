@@ -11,7 +11,7 @@ Fragmented Keys provide a straightforward way to manage and invalidate composite
 
 It does this by persisting in memcache (or other back-end persistance layer of your choice)  tag-instance versionining information. When constructing composite/fragmented keys these tags and their versions are used to generate the final composite key. 
 
-Thus if you wanted to tie something to to the granularity of say a specific thing like username you can do write do the following:
+Thus if you wanted to tie something to to the granularity of say a specific thing like username you can do the following:
 
 ```php
   $GlobalGreetingTag = new Tag\Standard("Global.Greeting", "global");
