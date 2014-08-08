@@ -49,8 +49,18 @@ Or you could just go crazy and invalidate all keys that rely on Global.Greating
                \-[x]Target User
 ```    
 
-Setup Note
+Setup & Installation 
 ==
+
+Installation
+---
+This project is available on composer, just add noizu-labs/fragmented-keys to your required list. 
+    "require": {
+        "noizu-labs/fragmented-keys": "dev-master",
+    }
+
+Setup
+-----
 The code depends on a Memcached, Memcache or APC handle being available and configured along with a global prefix to 
 avoid collisions. 
 
@@ -69,18 +79,25 @@ $tag = new Tag\Standard("Users", 1234, null, CacheHandler\Apc());
 ```
 
 
+Components
+=================
 
 Cache Handlers
-========================
-```
+-------
+```php
 $apcHandler = \NoizuLabs\FragmentedKeys\CacheHandler\Apc();
 $inMemoryHandler = \NoizuLabs\FragmentedKeys\CacheHandler\Memory();
 $memcachedHandler = \NoizuLabs\FragmentedKeys\CacheHandler\Memcached(new Memcached());
 $memcacheHandler = \NoizuLabs\FragmentedKeys\CacheHandler\Memcache(new Memcache());
 ```
 
-Tag Typs
-===================
+Tags
+--------
+
+Tags are a logical grouping that you would under certain circumstance invalidate assocaited cached data. 
+
+A User:$id pair,  a Site:$siteId, etc. This library takes they tag-instance pairs and appends @version fields to them so that when you want to invalidate a large swatch of related items you don't need to send dozens of invalidate requests to memcache, or apc. You just make a single $tag->increment() call and any associated keys that us that tag-instance (User:$userId) will generate new keys; 
+
 
 | Tag Class | Description|
 |-----------|------------|
@@ -91,13 +108,13 @@ Tag Typs
 *Delayed is not yet implemented
 
 Key Rings
-===================
+---------
 Key rings help may your life easier by letting you define common key structures one and then reuse him in your code as needed. 
-You can tweak settings in your config, or even define custom keys that always include some additional tags* with out requiring your cache caller to manually include them*
+You can tweak settings in your config, or even define custom keys that always include some additional tag s *with out requiring your cache caller to manually include them!*
 
 Example
-```
-
+```php
+<?php
     //=================================================
     // Config stuff you only need to do this once
     //=================================================
@@ -153,7 +170,7 @@ Example
 
 *The ability to auto include params isnt fully backed into the config process yet but you can emulate it easily by extending the base keyring class and doing the following
 
-```
+```php
 class MyGames extends NoizuLabs\FragmentedKeys\KeyRing {
     public getGameDescriptionKeyObj($gameId) {
          /* Define Key in the usual manner  */
