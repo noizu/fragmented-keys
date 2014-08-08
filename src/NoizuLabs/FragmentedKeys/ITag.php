@@ -7,15 +7,48 @@ namespace NoizuLabs\FragmentedKeys;
  */
 interface ITag
 {
+    /**
+     * Instantiate Tag. 
+     */
     public function __construct($group, $index, $version);
+    
+    /**
+     * get current Tag-Instance Version. 
+     */
     public function getTagVersion();
+    
+    /**
+     * get cache handler; 
+     */
+    public function getCacheHandler();
+    
+    /**
+     * Set Tag-Instance Version to specific value. 
+     */
     public function setTagVersion($version,$update);
+    
+    /**
+     * Reset version associated with Tag-Instance
+     */
     public function ResetTagVersion();
 
+    /**
+     * Tag Name, Instance & Version
+     */
     public function getFullTag();
+    
+    /*
+     * get Tag-Instance
+     */
     public function getTagName();
 
+    /**
+     * Increment Tag-Instance Version.
+     */
     public function Increment();
 
-    public function DelegateMemcacheQuery();
+    /**
+     * Allow Upstream Multi-Get for Performance Reasons
+     */
+    public function DelegateMemcacheQuery($group);
 }

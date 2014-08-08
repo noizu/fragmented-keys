@@ -9,7 +9,8 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
     private $tagNameB;
     private $tagNameAEntityOne;
     private $tagNameAEntityTwo;
-
+    private $apcHandler;
+    
     public function setUp()
     {
         global $container;
@@ -24,7 +25,10 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
              $container['memcache'] = $m;
         }
 
-
+        if(extension_loaded('apc') && ini_get('apc.enabled') && ini_get('apc.enable_cli'))
+        {
+            $this->apcHandler = new \NoizuLabs\FragmentedKeys\CacheHandler\Apc();
+        } 
 
         $time = new DateTime();
         $this->tagNameA = "TagA_" . $time->getTimestamp();
@@ -165,12 +169,12 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $tag2 = new Tag\Standard($this->tagNameB, $this->tagNameAEntityOne);
         $theKey = new Key\Standard("ThisIsAKey",  array($tag,$tag2));
 
-        $firstKey = $theKey->getKey();
+        $firstKey = $theKey->getKey(false);
 
         $this->WaitForClockTick();
 
         $theKey = new Key\Standard("ThisIsAKey", array($tag,$tag2));
-        $secondKey = $theKey->getKey();
+        $secondKey = $theKey->getKey(false);
 
         $this->assertEquals($firstKey, $secondKey);
     }
@@ -183,12 +187,73 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
         $tag2 = new Tag\Standard($this->tagNameB, $this->tagNameAEntityOne);
         $theKey = new Key\Standard("ThisIsAKey",  array($tag,$tag2));
-        $firstKey = $theKey->getKey();
+        $firstKey = $theKey->getKey(false);
         $tag2b = new Tag\Standard($this->tagNameB, $this->tagNameAEntityOne);
         $tag2b->Increment();
         $theKey = new Key\Standard("ThisIsAKey",  array($tag,$tag2));
-        $secondKey = $theKey->getKey();
+        $secondKey = $theKey->getKey(false);
         $this->assertNotEquals($firstKey, $secondKey);
     }
 
+    
+    /**
+     * @test
+     */
+    public function GetKeyShouldBeAbleToProcessGroupsOfTagsWithDifferentCacheHandlersAndReturnTheSameKeyIfNotIncremented()
+    {
+        if(is_null($this->apcHandler)) {
+            $this->markTestSkipped('Command Line APC must be enabled to execute this test');
+        }
+        
+        $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne, null, $this->apcHandler);
+        $tag2 = new Tag\Standard($this->tagNameB, $this->tagNameAEntityOne);
+        $theKey = new Key\Standard("ThisIsAKey",  array($tag,$tag2));
+
+        $firstKey = $theKey->getKey(false);
+
+        $this->WaitForClockTick();
+        $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne, null, $this->apcHandler);
+        $theKey = new Key\Standard("ThisIsAKey", array($tag,$tag2));
+        $secondKey = $theKey->getKey(false);
+
+        $this->assertEquals($firstKey, $secondKey);       
+    }
+    
+    /**
+     * @test
+     */
+    public function GetKeyShouldBeAbleToProcessGroupsOfTagsWithDifferentCacheHandlersAndReturnADifferentKeyIfIncremented()
+    {
+        if(is_null($this->apcHandler)) {
+            $this->markTestSkipped('Command Line APC must be enabled to execute this test');
+        }
+        
+        $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
+        $tag2 = new Tag\Standard($this->tagNameB, $this->tagNameAEntityOne, null, $this->apcHandler);
+        $theKey = new Key\Standard("ThisIsAKey",  array($tag,$tag2));
+        $firstKey = $theKey->getKey(false);
+        $tag2b = new Tag\Standard($this->tagNameB, $this->tagNameAEntityOne, null, $this->apcHandler);
+        $tag2b->Increment();
+        $tag2b->Increment();
+        $theKey = new Key\Standard("ThisIsAKey",  array($tag,$tag2));
+        $secondKey = $theKey->getKey(false);
+        $this->assertNotEquals($firstKey, $secondKey);        
+    }    
+    
+    /**
+     * @test 
+     */
+    public function AKeyShouldRemainConstantWhenUsingOnlyStaticTags()
+    {
+        $tag = new Tag\Constant($this->tagNameA, $this->tagNameAEntityOne,5);
+        $tag2 = new Tag\Constant($this->tagNameB, $this->tagNameAEntityOne,8);
+        $theKey = new Key\Standard("ThisIsAKey",  array($tag,$tag2));
+
+        $firstKey = $theKey->getKey(false);
+        $tag->increment();        
+        $tag2->increment();
+        $theKey = new Key\Standard("ThisIsAKey", array($tag,$tag2));
+        $secondKey = $theKey->getKey(false);
+        $this->assertEquals($firstKey, $secondKey);               
+    }
 }

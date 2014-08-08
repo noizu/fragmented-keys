@@ -51,12 +51,38 @@ Or you could just go crazy and invalidate all keys that rely on Global.Greating
 
 Setup Note
 ==
-The code depends on Memcached being available and set on a global pimple container named $container. 
+The code depends on a Memcached, Memcache or APC handle being available and configured along with a global prefix to 
+avoid collisions. 
 
 ```php
-global $container;
-$container = new \Pimple();
+
 $m = new \Memcached;
-$conn = $m->addServer('127.0.0.1', '11211');
-$container['memcache'] = $m;
+\NoizuLabs\FragmentedKeys\Configuration\setGlobalCacheHandler(new \NoizuLabs\FragmentedKeys\CacheHandler\Memcached($m));
+\NoizuLabs\FragmentedKeys\Configuration\setGlobalPrefix("MyApp");
+
+//you may override the handler per tag by calling 
+$tag->setCacheHandler($alternativeHandler); 
+
+//or by including a handler in you constructor. 
+$tag = new Tag\Standard("Users", 1234, null, CacheHandler\Apc());
+
 ```
+
+
+
+Cache Handlers
+========================
+```
+$apcHandler = \NoizuLabs\FragmentedKeys\CacheHandler\Apc();
+$inMemoryHandler = \NoizuLabs\FragmentedKeys\CacheHandler\Memory();
+$memcachedHandler = \NoizuLabs\FragmentedKeys\CacheHandler\Memcached(new Memcached());
+$memcacheHandler = \NoizuLabs\FragmentedKeys\CacheHandler\Memcache(new Memcache());
+```
+
+Tag Typs
+===================
+| Tag Class | Description                                                                                                       |
+--------------------------------------------------------------------------------------------------------------------------------|
+| Standard  | Basic Key. Persists version to specified cache handler                                                            |
+| Delayed   | Basic Key with built in Delay. Only internal key versions greater than the specified delay will cause a new  version to be returned. Allowing you to pull cached content that only updates every hours, 30 seconds, etc. |
+| Static    | Key with Static associated Version. E.g. version can only be set once at construction time. useful for incorporating non version tag-instance details in large composite keys | 

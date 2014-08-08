@@ -6,7 +6,13 @@ namespace NoizuLabs\FragmentedKeys;
  */
 interface IKey
 {
-    public function __construct($key, $keyId, array $tags);
-    public function AddKeyGroup(ITag $tag);
+    /*
+     * Append Tag to Key.  
+     */
+    public function AddKeyGroup(\NoizuLabs\FragmentedKeys\ITag $tag);
+    
+    /*
+     * Retrieve Key
+     */
     public function getKey();
 }

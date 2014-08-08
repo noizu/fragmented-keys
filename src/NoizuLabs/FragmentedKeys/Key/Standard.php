@@ -2,12 +2,11 @@
 namespace NoizuLabs\FragmentedKeys\Key;
 
 /**
-*  This is a standard implementation of a fragmented key, One obvious extensions would deal with the nesting of keys within keys.
+*  This is a standard implementation of a fragmented key. 
 */
-class Standard {
+class Standard implements \NoizuLabs\FragmentedKeys\IKey{
     protected $key;
     protected $groupId;
-    protected $memcache;
     protected $keyGroups = array();
     static protected $TAG_SEPERATOR = ":t";
     static protected $INDEX_SEPERATOR = "_";
@@ -21,11 +20,10 @@ class Standard {
         {
             $this->keyGroups[$keyGroup->getTagName()] = $keyGroup;
         }
-        $this->memcache = $container['memcache'];
     }
 
-    public function AddKeyGroup(ITag $keyGroup) {
-        $this->keyGroups[$keyGroup->getGroupTag()] = $keyGroup;
+    public function AddKeyGroup(\NoizuLabs\FragmentedKeys\ITag $tag) {
+        $this->keyGroups[$keyGroup->getGroupTag()] = $tag;
     }
 
     public function getKey($hash = true)
@@ -38,20 +36,41 @@ class Standard {
     }
 
     /**
+     *  Bulk Fetch tag-instance versions. 
      *  While it would be architecturally cleaner to gather group versions from a KeyGroup function call
-     *  the use of memcache multiget helps us avoid some bottle-necking produced by the increased number of key-versions we
+     *  the use of memcache/apc multiget helps us avoid some bottle-necking produced by the increased number of key-versions we
      *  need to look-up when using this fragmented key system.
      */
     protected function GatherGroupVersions() {
-        $group_tags = array_keys($this->keyGroups);
+        $tags = array_keys($this->keyGroups);
 
-        foreach ($group_tags as $group_tag) {
-            if($this->keyGroups[$group_tag]->DelegateMemcacheQuery() == false) {
-                unset($group_tag);
+        $handlers = array();
+        foreach($tags as $tag) {
+            $handler = $this->keyGroups[$tag]->getCacheHandler()->getGroupName();
+            if(!array_key_exists($handler, $handlers)) {
+                $handlers[$handler] = array();
+            }
+            $handlers[$handler][] = $tag;
+        }
+        
+        $tags = array();
+        
+        foreach($handlers as $handler => $group_tags) {
+            foreach ($group_tags as $group_tag) {
+                if($this->keyGroups[$group_tag]->DelegateMemcacheQuery($handler) == false) {
+                    unset($group_tag);
+                }
+            }
+            
+            if(!empty($group_tags)) {                
+                $cacheHandler = $this->keyGroups[$group_tags[0]]->getCacheHandler();
+                $r = $cacheHandler->getMulti($group_tags);
+                if($r) {
+                    $tags = array_merge($tags, $r);
+                }
             }
         }
-
-        $tags = $this->memcache->getMulti($group_tags);
+        
         foreach($this->keyGroups as $key => &$group) {
             if(array_key_exists($key, $tags))
             {
@@ -59,7 +78,7 @@ class Standard {
             } else {
                 $group->ResetTagVersion();
             }
-        }
+        }        
     }
 
     /**
