@@ -7,7 +7,7 @@ A php library for managing cache invalidation by tracking tag-value pair version
 
 Overview
 ----------
-Fragmented Keys provide a straightforward way to manage and invalidate composite memcache keys. 
+Fragmented Keys provide a straightforward way to manage and invalidate composite cache keys. 
 
 It does this by persisting in memcache (or other back-end persistance layer of your choice)  tag-instance versionining information. When constructing composite/fragmented keys these tags and their versions are used to generate the final composite key. 
 
