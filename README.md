@@ -16,20 +16,18 @@ Thus if you wanted to tie something to to the granularity of say a specific thin
 ```php
   $GlobalGreetingTag = new Tag\Standard("Global.Greeting", "global");
   $UserUserNameTag = new Tag\Standard("User.Username", $userId);
-  $theKey = new Key\Standard(
-      "CacheDataTheInvalidateSWhenUserNamesAreChanges", 
-      "KeyInstanceId", 
-      array($UserUserNameTag, $GlobalGreetingTag));
-  $cacheKey = $theKey->getKey(); 
+  $keyobj = new Key\Standard(
+      "CacheDataThatInvalidatesWhenUserNamesAreChanged", 
+      array($UserUserNameTag, $GlobalGreetingTag)
+  );
+  $cacheKey = $keyObj->getKeyStr(); 
 ```
 
-You could then Invalidate only items linked to your user's username by calling:
-
+You can then Invalidate only items linked to your user's username by calling:
 ```php
   $UserUserNameTag = new Tag\Standard("User.Username", $userId);
   $UserUserNameTag->Increment(); 
 ```
-
 
 Behind the scenes this looks something like blocking out everything below the [Targeted User] bucket. 
 ```  
@@ -48,7 +46,7 @@ Or you could just go crazy and invalidate all keys that rely on Global.Greating
   $GlobalGreetingTag->Increment(); 
 ```
   
-I hope your database is ready for it. 
+but amke sure your database is ready for it. 
 ```  
   AllKey
     \ 
