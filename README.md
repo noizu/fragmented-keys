@@ -7,11 +7,11 @@ A php library for managing cache invalidation by tracking tag-value pair version
 
 Overview
 ----------
-Fragmented Keys provide a straightforward way to manage and invalidate fragemented memcache keys. 
+Fragmented Keys provide a straightforward way to manage and invalidate composite memcache keys. 
 
-It does this by persisting in memcache (or other back-end of your discretion) various tag versionining information. When constructing composite/fragmented keys tags and their versions are used to generate the final key. 
+It does this by persisting in memcache (or other back-end persistance layer of your choice)  tag-instance versionining information. When constructing composite/fragmented keys these tags and their versions are used to generate the final composite key. 
 
-Thus if you wanted to tie something to to the granularity of say a specific thing like username you can construct a key such as, 
+Thus if you wanted to tie something to to the granularity of say a specific thing like username you can do write do the following:
 
 ```php
   $GlobalGreetingTag = new Tag\Standard("Global.Greeting", "global");
@@ -26,9 +26,12 @@ Thus if you wanted to tie something to to the granularity of say a specific thin
 You could then Invalidate only items linked to your user's username by calling:
 
 ```php
+  $UserUserNameTag = new Tag\Standard("User.Username", $userId);
   $UserUserNameTag->Increment(); 
 ```
 
+
+Behind the scenes this looks something like blocking out everything below the [Targeted User] bucket. 
 ```  
   AllKey
     \ 
@@ -36,7 +39,7 @@ You could then Invalidate only items linked to your user's username by calling:
             \
              \-[ ]Other User Cached Greeting
               \
-               \-[x]Target User
+               \-[x]Targeted User
 ```  
     
 Or you could just go crazy and invalidate all keys that rely on Global.Greating
@@ -45,6 +48,7 @@ Or you could just go crazy and invalidate all keys that rely on Global.Greating
   $GlobalGreetingTag->Increment(); 
 ```
   
+I hope your database is ready for it. 
 ```  
   AllKey
     \ 
