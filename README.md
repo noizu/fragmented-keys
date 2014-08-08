@@ -81,8 +81,11 @@ $memcacheHandler = \NoizuLabs\FragmentedKeys\CacheHandler\Memcache(new Memcache(
 
 Tag Typs
 ===================
-| Tag Class | Description                                                                                                       |
---------------------------------------------------------------------------------------------------------------------------------|
+
+| Tag Class | Description|
+|-----------|------------|
 | Standard  | Basic Key. Persists version to specified cache handler                                                            |
-| Delayed   | Basic Key with built in Delay. Only internal key versions greater than the specified delay will cause a new  version to be returned. Allowing you to pull cached content that only updates every hours, 30 seconds, etc. |
-| Static    | Key with Static associated Version. E.g. version can only be set once at construction time. useful for incorporating non version tag-instance details in large composite keys | 
+| Delayed*   | Basic Key with built in Delay. Only internal key versions greater than the specified delay will cause a new  version to be returned. Allowing you to pull cached content that only updates every hours, 30 seconds, etc. |
+| Constant    | Key with Constant associated Version. E.g. version can only be set once at construction time. useful for incorporating non version tag-instance details in large composite keys | 
+
+*Delayed is not yet implemented
