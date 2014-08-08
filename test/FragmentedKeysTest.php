@@ -10,11 +10,16 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
     private $tagNameAEntityOne;
     private $tagNameAEntityTwo;
     private $apcHandler;
+    private $container;
     
+    //==================================================================================================================
+    // SetUp/Teardown
+    //==================================================================================================================
     public function setUp()
     {
         global $container;
-
+        $this->container = &$container;
+        
         if(!isset($container)) {
              $container = new \Pimple();
         }
@@ -37,15 +42,23 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $this->tagNameAEntityTwo = 2;
     }
 
+    //==================================================================================================================
+    // Helper Methods
+    //==================================================================================================================
     private function WaitForClockTick()
     {
         sleep(1);
     }
-
-    /**
-     * @test
-     */
-    public function FragmentedTagShouldReturnTheSameValueIfIncrementHasNotBeenCalled()
+    
+    //==================================================================================================================
+    // Tests
+    //==================================================================================================================
+    
+    //-----------------------------
+    // Tests - tags
+    //-----------------------------    
+    /** @test */
+    public function StandardTagShouldReturnTheSameValueIfIncrementHasNotBeenCalled()
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
         $version1 = $tag->getFullTag();
@@ -58,10 +71,8 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals($version1, $version2, "The second call to getVersion did not return the expected value");
     }
 
-    /**
-     * @test
-     */
-    public function FragmentedTagShouldReturnDifferentValuesIfIncrementHasBeenCalled()
+    /** @test */    
+    public function StandardTagShouldReturnDifferentValuesIfIncrementHasBeenCalled()
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
         $version1 = $tag->getFullTag();
@@ -73,10 +84,8 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $this->assertNotEquals($version1, $version2, "The second call to getVersion should not have matched the previous value");
     }
 
-    /**
-     * @test
-     */
-    public function FragmentedTagsShouldReturnDifferentValuesForDifferentEntities()
+    /** @test */
+    public function StandardTagsShouldReturnDifferentValuesForDifferentEntities()
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
 
@@ -85,10 +94,8 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $this->assertNotEquals($tag->getFullTag(), $tag2->getFullTag(), "key2 and key1 should have had different tag values");
     }
 
-    /**
-     * @test
-     */
-    public function FragmentedTagsShouldReturnDifferentValuesForDifferentTags()
+    /** @test */
+    public function StandardTagsShouldReturnDifferentValuesForDifferentTags()
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
 
@@ -97,10 +104,8 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $this->assertNotEquals($tag->getFullTag(), $tag2->getFullTag(), "key2 and key1 should have had different tag values");
     }
 
-    /**
-     * @test
-     */
-    public function CallingIncrementVersionShouldChangeTheVersionOnTheTagInstance()
+    /** @test */
+    public function CallingIncrementVersionShouldChangeTheVersionOnStandardTagInstances()
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
         $version = $tag->getTagVersion();
@@ -110,10 +115,8 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $this->assertNotEquals($version,$version2);
     }
 
-    /**
-     * @test
-     */
-    public function IncrementingOneTagEntityShouldNotChangeVersionOfSameTagForADifferentEntity()
+    /** @test */
+    public function IncrementingOneTagGroupInstanceShouldNotChangeTheVersionOfOtherTAgInstancePairs()
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
         $tag2 = new Tag\Standard($this->tagNameA, $this->tagNameAEntityTwo);
@@ -122,11 +125,8 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals($version, $tag->getFullTag());
     }
 
-
-    /**
-     * @test
-     */
-    public function IncrementingOneTagEntityShouldNotChangeVersionOfDifferentTagForTheSameEntityId()
+    /** @test */
+    public function IncrementingOneTagEntityShouldNotChangeVersionOfDifferentTagForTheSameIdValue()
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
         $tag2 = new Tag\Standard($this->tagNameB, $this->tagNameAEntityOne);
@@ -135,9 +135,10 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals($version, $tag->getFullTag());
     }
 
-    /**
-     * @test
-     */
+    //-----------------------------
+    // Tests - keys
+    //-----------------------------        
+    /** @test */
     public function GetKeyShouldCorrectlyPullVersionsFromAllTags()
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
@@ -148,9 +149,7 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals($expected, $theKey->getKey());
     }
 
-    /**
-     * @test
-     */
+    /** @test */
     public function GetKeyShouldWorkWithASingleTag()
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
@@ -160,9 +159,7 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals($expected, $theKey->getKey());
     }
 
-    /**
-     * @test
-     */
+    /** @test */
     public function GetKeyShouldReturnSameValueOnSubsequentCallsIfTagsAreNotIncremented()
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
@@ -179,9 +176,7 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals($firstKey, $secondKey);
     }
 
-    /**
-     * @test
-     */
+    /** @test */
     public function GetKeyShouldReturnDifferentValuesIfTagsAreIncremented()
     {
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
@@ -195,10 +190,7 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $this->assertNotEquals($firstKey, $secondKey);
     }
 
-    
-    /**
-     * @test
-     */
+    /** @test */
     public function GetKeyShouldBeAbleToProcessGroupsOfTagsWithDifferentCacheHandlersAndReturnTheSameKeyIfNotIncremented()
     {
         if(is_null($this->apcHandler)) {
@@ -219,15 +211,13 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals($firstKey, $secondKey);       
     }
     
-    /**
-     * @test
-     */
+    /** @test */
     public function GetKeyShouldBeAbleToProcessGroupsOfTagsWithDifferentCacheHandlersAndReturnADifferentKeyIfIncremented()
     {
         if(is_null($this->apcHandler)) {
             $this->markTestSkipped('Command Line APC must be enabled to execute this test');
         }
-        
+
         $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
         $tag2 = new Tag\Standard($this->tagNameB, $this->tagNameAEntityOne, null, $this->apcHandler);
         $theKey = new Key\Standard("ThisIsAKey",  array($tag,$tag2));
@@ -237,12 +227,10 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $tag2b->Increment();
         $theKey = new Key\Standard("ThisIsAKey",  array($tag,$tag2));
         $secondKey = $theKey->getKey(false);
-        $this->assertNotEquals($firstKey, $secondKey);        
-    }    
+        $this->assertNotEquals($firstKey, $secondKey);
+    }
     
-    /**
-     * @test 
-     */
+    /** @test */
     public function AKeyShouldRemainConstantWhenUsingOnlyStaticTags()
     {
         $tag = new Tag\Constant($this->tagNameA, $this->tagNameAEntityOne,5);
@@ -250,10 +238,45 @@ class FragmentedKeysTest extends PHPUnit_Framework_TestCase {
         $theKey = new Key\Standard("ThisIsAKey",  array($tag,$tag2));
 
         $firstKey = $theKey->getKey(false);
-        $tag->increment();        
+        $tag->increment();
         $tag2->increment();
         $theKey = new Key\Standard("ThisIsAKey", array($tag,$tag2));
         $secondKey = $theKey->getKey(false);
-        $this->assertEquals($firstKey, $secondKey);               
+        $this->assertEquals($firstKey, $secondKey);
+    }
+    
+    
+    //-----------------------------
+    // Tests - key rings
+    //-----------------------------        
+    /** @test */
+    public function KeyDefinedUsingKeyRingShouldMatchEquivelentManuallyConstructedKey()
+    {
+        // Define Key
+        
+        $cacheHandlers = array(
+            'memcache' => new \NoizuLabs\FragmentedKeys\CacheHandler\Memcached($this->container['memcache']),
+            'memory' => new \NoizuLabs\FragmentedKeys\CacheHandler\Memory()
+            );
+        $globalOptions = array(
+          'type' => 'standard'  
+        );
+        $tagOptions = array(
+            $this->tagNameB => array('type' => 'constant', 'version' => 5)
+        );
+        
+        $ring = new FragmentedKeys\KeyRing($globalOptions,  $tagOptions, 'memcache', $cacheHandlers);
+        $ring->DefineKey("Users", array($this->tagNameA, array('tag' => $this->tagNameB , 'cacheHandler' => 'memory', 'version' => null, 'type'=>'standard'), $this->tagNameB));
+                
+        $tag = new Tag\Standard($this->tagNameA, $this->tagNameAEntityOne);
+        $tag2 = new Tag\Standard($this->tagNameB, $this->tagNameAEntityOne, null, new \NoizuLabs\FragmentedKeys\CacheHandler\Memory());
+        $tag3 = new Tag\Constant($this->tagNameB, $this->tagNameAEntityTwo, 5);
+        $key1 = new Key\Standard("Users", array($tag,$tag2,$tag3));
+        $firstKey = $key1->getKey(false); 
+        
+        $key2 = $ring->getUsersKeyObj($this->tagNameAEntityOne, $this->tagNameAEntityOne, $this->tagNameAEntityTwo);
+        $secondKey = $key2->getKey(false); 
+        $this->assertEquals($firstKey, $secondKey);
+       
     }
 }

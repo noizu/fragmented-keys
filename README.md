@@ -89,3 +89,84 @@ Tag Typs
 | Constant    | Key with Constant associated Version. E.g. version can only be set once at construction time. useful for incorporating non version tag-instance details in large composite keys | 
 
 *Delayed is not yet implemented
+
+Key Rings
+===================
+Key rings help may your life easier by letting you define common key structures one and then reuse him in your code as needed. 
+You can tweak settings in your config, or even define custom keys that always include some additional tags* with out requiring your cache caller to manually include them*
+
+Example
+```
+
+    //=================================================
+    // Config stuff you only need to do this once
+    //=================================================
+    /* Somewhere in you bootstrap or wherever you instiatiate a KeyRing or KeyRing derived Class */
+    $cacheHandlers = array(
+        'memcache' => new \NoizuLabs\FragmentedKeys\CacheHandler\Memcached($this->container['memcache']),
+        'memory' => new \NoizuLabs\FragmentedKeys\CacheHandler\Memory()
+        );
+    $globalOptions = array(
+      'type' => 'standard'  
+    );
+    $tagOptions = array(
+        'universe' => array('type' => 'constant', 'version' => 5)
+    );
+    $ring = new FragmentedKeys\KeyRing($globalOptions,  $tagOptions, 'memcache', $cacheHandlers);
+
+    /* define you keys */
+    $ring->DefineKey("Users", array('universe', array('tag' => 'planet' , 'cacheHandler' => 'memory', 'version' => null, 'type'=>'standard'), 'city'));
+
+
+    //==============================================
+    // Need to check for some cached data? Generating you key now takes one line instead of 5;
+    //===============================================
+    $users = $ring->getUsersKeyObj('MilkyWay', 'Earth', 'Chicago')->getKeyStr();
+    $users = $memcache->get($userKey);
+    if(!users) {
+          $users = query("select * from users where universe='MilkyWay' AND planet='Earth' AND 'city' => 'Chicago'");
+          $memcache->set($userKey, $users);
+    }
+    
+    /* Invalidate them */
+    $universeTag = new Tag\Standard('universe', 'MilkyWay'); 
+    $universeTag->increment(); 
+
+
+    //===============================
+    // Old Method
+    //===============================
+    $universeTag = new Tag\Constant("universe", "MilkyWay",5);
+    $worldTag = new Tag\Standard("planet", "Earth");
+    $cityTag = new Tag\Standard("city", "Chicago", null, new FragmentedKeys\CacheHandler\Memory());
+    $key = new Key\Standard("Users", array($universeTag, $worldTag, $cityTag); 
+    $userKey = $key->getKeyStr();
+    $users = $memcache->get($userKey);
+    if(!users) {
+          $users = query("select * from users where universe='MilkyWay' AND planet='Earth' AND 'city' => 'Chicago'");
+          $memcache->set($userKey, $users);
+    }
+    
+    /* Invalidate them */
+    $universeTag->increment(); 
+```
+
+*The ability to auto include params isnt fully backed into the config process yet but you can emulate it easily by extending the base keyring class and doing the following
+
+```
+class MyGames extends NoizuLabs\FragmentedKeys\KeyRing {
+    public getGameDescriptionKeyObj($gameId) {
+         /* Define Key in the usual manner  */
+
+         /* . . . */
+
+         $gameSiteId = $this->pimpleContainer['gameSite']; 
+         $userId = $this->getUserId(); 
+         return $this->getKeyObj("GameDescription", array( $gameId, $gameSiteId, $userId, ... etc.));
+    }
+}
+
+// Now your cache code looks simple
+$gameDescCacheKey = $ring->getGameDescriptionKeyObj($gameId)->getKeyStr(); 
+
+```

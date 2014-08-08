@@ -22,14 +22,14 @@ class Tag implements FragmentedKeys\ITag
      * (e.g. user, apple, etc.)
      * @var string
      */
-    protected $groupName;
+    protected $tagName;
     
     /**
      * instance/index within group 
      * e.g. user:Keith
      * @var mixed
      */
-    protected $groupIndex;
+    protected $tagInstance;
     
     /**
      * tag-instance version. 
@@ -46,25 +46,25 @@ class Tag implements FragmentedKeys\ITag
     protected $cacheHandler;
     static protected $VERSION_SEPERATOR = ":v";
     static protected $INDEX_SEPERATOR = "_";
-
-        
+       
     /**
-     *
-     * @param string $group - name of group ("user", "day_of_week", "username", etc)
-     * @param string $index - index  for group (unique id of group record in question)
-     * @param int $version - group version can be manually set if desired.
+     * @param string $tag - name of tag/group ("user", "day_of_week", "username", etc)
+     * @param string $instance - Tag instance (unique id of group record in question)
+     * @param int $version - optional group version can be manually set if desired.
+     * @param ICacheHandler $handler - optional cache handler override
+     * @param string $prefix - optional  prefix override
      */
-    public function __construct($group, $index = "na", $version = null, $handler = null, $prefix = null)
+    public function __construct($tag, $instance = "na", $version = null, $handler = null, $prefix = null)
     {
         global $container;
-        $this->groupName = $group;
-        $this->groupIndex = $index;
+        $this->tagName = $tag;
+        $this->tagInstance = $instance;
         if(!empty($version)) {
             $this->version = $version;
         }
         if(!empty($handler)) {
             if ( is_a($handler, "\NoizuLabs\FragmentedKeys\ICacheHandler")) {
-                $this->cacheHandler = $handler;
+                $this->cacheHandler = $handler;                
             } else {
                 trigger_error("\$handler param of Tag constructor must be null or of type ICacheHandler");
             }
@@ -135,7 +135,7 @@ class Tag implements FragmentedKeys\ITag
      */
     public function getTagName()
     {
-        return $this->groupName . self::$INDEX_SEPERATOR . $this->groupIndex . $this->cachePrefix;
+        return $this->tagName . self::$INDEX_SEPERATOR . $this->tagInstance . $this->cachePrefix;
     }
 
     /**

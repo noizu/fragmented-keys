@@ -3,13 +3,14 @@ namespace NoizuLabs\FragmentedKeys\CacheHandler;
 
 
 class Memory implements \NoizuLabs\FragmentedKeys\ICacheHandler {
-    protected $cache = array();
+    static protected $cache = array();
         
     public function __construct() {
+        
     }
     
-    public function get($key) {
-        return isset($this->cache[$key]) ? $this->cache[$key] : false;
+    public function get($key) {        
+        return isset(self::$cache[$key]) ? self::$cache[$key] : false;
     }
   
     public function getGroupName() {
@@ -17,10 +18,14 @@ class Memory implements \NoizuLabs\FragmentedKeys\ICacheHandler {
     }
 
     public function set($key, $value, $expiration = 0) {
-        $this->cache[$key] = $value;
+        self::$cache[$key] = $value;
     }
 
-    public function getMulti(array $keys) {
-        return array_intersect_key($this->cache, $keys);
+    public function getMulti(array $keys) {        
+        $akeys = array(); 
+        foreach($keys as $k) {
+            $akeys[$k] = true; 
+        }
+        return array_intersect_key(self::$cache, $akeys);
     }
 }

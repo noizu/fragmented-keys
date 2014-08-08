@@ -26,7 +26,22 @@ class Standard implements \NoizuLabs\FragmentedKeys\IKey{
         $this->keyGroups[$keyGroup->getGroupTag()] = $tag;
     }
 
+    /**
+     * @deprecated
+     * @param bool $hash
+     * @return string
+     */
     public function getKey($hash = true)
+    {
+        return $this->getKeyStr($hash); 
+    }
+
+    /**
+     * calculate composite key
+     * @param bool $hash use true to return md5 (memcache friendly) key or use false to return raw key for visual inspection. 
+     * @return string
+     */
+    public function getKeyStr($hash = true)
     {
         $key =  $this->key . self::$INDEX_SEPERATOR . $this->groupId . self::$TAG_SEPERATOR . implode(self::$TAG_SEPERATOR, $this->gatherTags());
         if($hash) {
@@ -34,7 +49,7 @@ class Standard implements \NoizuLabs\FragmentedKeys\IKey{
         }
         return $key;
     }
-
+    
     /**
      *  Bulk Fetch tag-instance versions. 
      *  While it would be architecturally cleaner to gather group versions from a KeyGroup function call
@@ -94,5 +109,9 @@ class Standard implements \NoizuLabs\FragmentedKeys\IKey{
             $tags[] = $group->getFullTag();
         }
         return $tags;
+    }
+    
+    public function __toString() {
+        return $this->getKey(false);
     }
 }
