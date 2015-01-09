@@ -4,6 +4,7 @@ FragmentedKey
 tl;dr;
 A php library for managing cache invalidation by tracking tag-value pair versions on memcache, apc or other storage device and generating derived cache keys based on those values. 
 
+For a Java port of this library please see (https://github.com/noizu/fragmented-keys-4java)
 
 Overview
 ----------
