@@ -19,6 +19,8 @@ fragmented-keys/
 │   ├── Integration/                    #   Redis/Memcached/APCu/mixed handler + key tests
 │   └── *Test.php                       #   Unit tests (tags, keys, key ring, wire compat)
 ├── docs/                               # Project documentation
+│   ├── PROJ-ARCH.md                    #   Architecture overview (components, data flow, decisions)
+│   ├── PROJ-ARCH.summary.md            #   Tree-only companion for tools/agents
 │   ├── PROJ-LAYOUT.md                  #   This file — navigable structure map
 │   ├── PROJ-LAYOUT.summary.md          #   Tree-only companion for tools/agents
 │   └── layout/src.md                   #   Detailed src/ breakdown

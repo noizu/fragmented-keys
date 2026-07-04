@@ -11,7 +11,7 @@ fragmented-keys/
 │   ├── KeyRingInterface.php
 │   └── TagInterface.php
 ├── tests/                        # Unit + Integration/
-├── docs/                         # PROJ-LAYOUT.md, PROJ-LAYOUT.summary.md, layout/src.md
+├── docs/                         # PROJ-ARCH.md, PROJ-LAYOUT.md, *.summary.md, layout/src.md
 ├── .github/workflows/ci.yml
 ├── Makefile
 ├── phpunit.xml
