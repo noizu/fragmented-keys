@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  coverage:
+    name: Tests + coverage
+    runs-on: ubuntu-latest
+
+    # Local full-suite line coverage measures ~93%; 90 is the enforced floor.
+    env:
+      MIN_COVERAGE: "90"
+
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      memcached:
+        image: memcached:1.6
+        ports:
+          - 11212:11211
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP with pcov
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: json, redis, memcached, apcu
+          ini-values: apc.enable_cli=1
+          coverage: pcov
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Wait for memcached
+        run: |
+          for i in $(seq 1 30); do
+            (echo > /dev/tcp/127.0.0.1/11212) >/dev/null 2>&1 && exit 0
+            sleep 1
+          done
+          echo "memcached did not become ready" >&2
+          exit 1
+
+      - name: Tests with coverage (enforce threshold)
+        run: make coverage-check MIN_COVERAGE="$MIN_COVERAGE" | tee coverage.out
+
+      - name: Publish coverage to job summary
+        if: always()
+        run: |
+          {
+            echo '### Coverage'
+            echo '```'
+            grep -E '^\s*(Classes|Methods|Lines|Line coverage):' coverage.out || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 14
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage/clover.xml
+          fail_ci_if_error: false

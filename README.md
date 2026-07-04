@@ -15,19 +15,22 @@ It does this by persisting in memcache (or other back-end persistance layer of y
 Thus if you wanted to tie something to to the granularity of say a specific thing like username you can do the following:
 
 ```php
-  $GlobalGreetingTag = new Tag\Standard("Global.Greeting", "global");
-  $UserUserNameTag = new Tag\Standard("User.Username", $userId);
-  $keyobj = new Key\Standard(
-      "CacheDataThatInvalidatesWhenUserNamesAreChanged", 
-      array($UserUserNameTag, $GlobalGreetingTag)
-  );
-  $cacheKey = $keyObj->getKeyStr(); 
+use NoizuLabs\FragmentedKeys\Key\StandardKey;
+use NoizuLabs\FragmentedKeys\Tag\StandardTag;
+
+$globalGreetingTag = new StandardTag("Global.Greeting", "global");
+$userUserNameTag = new StandardTag("User.Username", $userId);
+$keyObj = new StandardKey(
+    "CacheDataThatInvalidatesWhenUserNamesAreChanged",
+    [$userUserNameTag, $globalGreetingTag],
+);
+$cacheKey = $keyObj->getKeyStr();
 ```
 
 You can then Invalidate only items linked to your user's username by calling:
 ```php
-  $UserUserNameTag = new Tag\Standard("User.Username", $userId);
-  $UserUserNameTag->Increment(); 
+$userUserNameTag = new StandardTag("User.Username", $userId);
+$userUserNameTag->increment();
 ```
 
 Behind the scenes this looks something like blocking out everything below the [Targeted User] bucket. 
@@ -44,7 +47,7 @@ Behind the scenes this looks something like blocking out everything below the [T
 Or you could just go crazy and invalidate all keys that rely on Global.Greating
 
 ```php
-  $GlobalGreetingTag->Increment(); 
+$globalGreetingTag->increment();
 ```
   
 but amke sure your database is ready for it. 
@@ -70,21 +73,24 @@ This project is available on composer, just add noizu-labs/fragmented-keys to yo
 
 Setup
 -----
-The code depends on a Memcached, Memcache or APC handle being available and configured along with a global prefix to 
-avoid collisions. 
+The code depends on a Redis, Memcached or APCu handle being available and configured along with a global prefix to
+avoid collisions.
 
 ```php
+use NoizuLabs\FragmentedKeys\CacheHandler\APCuHandler;
+use NoizuLabs\FragmentedKeys\CacheHandler\MemcachedHandler;
+use NoizuLabs\FragmentedKeys\Configuration;
+use NoizuLabs\FragmentedKeys\Tag\StandardTag;
 
-$m = new \Memcached;
-\NoizuLabs\FragmentedKeys\Configuration\setGlobalCacheHandler(new \NoizuLabs\FragmentedKeys\CacheHandler\Memcached($m));
-\NoizuLabs\FragmentedKeys\Configuration\setGlobalPrefix("MyApp");
+$m = new \Memcached();
+Configuration::setDefaultCacheHandler(new MemcachedHandler($m));
+Configuration::setGlobalPrefix("MyApp");
 
-//you may override the handler per tag by calling 
-$tag->setCacheHandler($alternativeHandler); 
+// you may override the handler per tag by calling
+$tag->setCacheHandler($alternativeHandler);
 
-//or by including a handler in you constructor. 
-$tag = new Tag\Standard("Users", 1234, null, CacheHandler\Apc());
-
+// or by passing a handler to the constructor.
+$tag = new StandardTag("Users", "1234", null, new APCuHandler());
 ```
 
 
@@ -94,10 +100,15 @@ Components
 Cache Handlers
 -------
 ```php
-$apcHandler = \NoizuLabs\FragmentedKeys\CacheHandler\Apc();
-$inMemoryHandler = \NoizuLabs\FragmentedKeys\CacheHandler\Memory();
-$memcachedHandler = \NoizuLabs\FragmentedKeys\CacheHandler\Memcached(new Memcached());
-$memcacheHandler = \NoizuLabs\FragmentedKeys\CacheHandler\Memcache(new Memcache());
+use NoizuLabs\FragmentedKeys\CacheHandler\APCuHandler;
+use NoizuLabs\FragmentedKeys\CacheHandler\MemcachedHandler;
+use NoizuLabs\FragmentedKeys\CacheHandler\MemoryHandler;
+use NoizuLabs\FragmentedKeys\CacheHandler\RedisHandler;
+
+$apcuHandler     = new APCuHandler();
+$inMemoryHandler = new MemoryHandler();
+$memcachedHandler = new MemcachedHandler(new \Memcached());
+$redisHandler    = new RedisHandler(new \Redis());
 ```
 
 Tags
@@ -108,13 +119,13 @@ Tags are a logical grouping that you would under certain circumstance invalidate
 A User:$id pair,  a Site:$siteId, etc. This library takes they tag-instance pairs and appends @version fields to them so that when you want to invalidate a large swatch of related items you don't need to send dozens of invalidate requests to memcache, or apc. You just make a single $tag->increment() call and any associated keys that us that tag-instance (User:$userId) will generate new keys; 
 
 
-| Tag Class | Description|
-|-----------|------------|
-| Standard  | Basic Key. Persists version to specified cache handler                                                            |
-| Delayed*   | Basic Key with built in Delay. Only internal key versions greater than the specified delay will cause a new  version to be returned. Allowing you to pull cached content that only updates every hours, 30 seconds, etc. |
-| Constant    | Key with Constant associated Version. E.g. version can only be set once at construction time. useful for incorporating non version tag-instance details in large composite keys | 
+| Tag Class    | Description|
+|--------------|------------|
+| StandardTag  | Basic tag. Persists version to the specified cache handler.                                                       |
+| DelayedTag   | Tag with a built-in grace window. For `delaySeconds` after an increment, readers keep seeing the previous version, letting you serve cached content that only rolls over every N seconds/minutes/hours. |
+| ConstantTag  | Tag with a constant associated version, set once at construction time. Useful for incorporating non-versioned tag-instance details in large composite keys. |
 
-*Delayed is not yet implemented
+Via a `KeyRing`, select the type with the `'type'` option (`'standard'`, `'delayed'`, or `'constant'`); `DelayedTag` also reads a `'delay_seconds'` option.
 
 Key Rings
 ---------
@@ -124,71 +135,83 @@ You can tweak settings in your config, or even define custom keys that always in
 Example
 ```php
 <?php
+use NoizuLabs\FragmentedKeys\CacheHandler\MemcachedHandler;
+use NoizuLabs\FragmentedKeys\CacheHandler\MemoryHandler;
+use NoizuLabs\FragmentedKeys\Key\StandardKey;
+use NoizuLabs\FragmentedKeys\KeyRing;
+use NoizuLabs\FragmentedKeys\Tag\ConstantTag;
+use NoizuLabs\FragmentedKeys\Tag\StandardTag;
+
     //=================================================
     // Config stuff you only need to do this once
     //=================================================
-    /* Somewhere in you bootstrap or wherever you instiatiate a KeyRing or KeyRing derived Class */
-    $cacheHandlers = array(
-        'memcache' => new \NoizuLabs\FragmentedKeys\CacheHandler\Memcached($this->container['memcache']),
-        'memory' => new \NoizuLabs\FragmentedKeys\CacheHandler\Memory()
-        );
-    $globalOptions = array(
-      'type' => 'standard'  
-    );
-    $tagOptions = array(
-        'universe' => array('type' => 'constant', 'version' => 5)
-    );
-    $ring = new FragmentedKeys\KeyRing($globalOptions,  $tagOptions, 'memcache', $cacheHandlers);
+    /* Somewhere in your bootstrap or wherever you instantiate a KeyRing or KeyRing-derived class */
+    $cacheHandlers = [
+        'memcache' => new MemcachedHandler($this->container['memcache']),
+        'memory'   => new MemoryHandler(),
+    ];
+    $globalOptions = [
+        'type' => 'standard',
+    ];
+    $tagOptions = [
+        'universe' => ['type' => 'constant', 'version' => 5],
+    ];
+    $ring = new KeyRing($globalOptions, $tagOptions, 'memcache', $cacheHandlers);
 
-    /* define you keys */
-    $ring->DefineKey("Users", array('universe', array('tag' => 'planet' , 'cacheHandler' => 'memory', 'version' => null, 'type'=>'standard'), 'city'));
+    /* define your keys */
+    $ring->defineKey("Users", ['universe', ['tag' => 'planet', 'cache_handler' => 'memory', 'version' => null, 'type' => 'standard'], 'city']);
 
 
     //==============================================
-    // Need to check for some cached data? Generating you key now takes one line instead of 5;
+    // Need to check for some cached data? Generating your key now takes one line instead of 5;
     //===============================================
-    $users = $ring->getUsersKeyObj('MilkyWay', 'Earth', 'Chicago')->getKeyStr();
+    $userKey = $ring->getUsersKeyObj('MilkyWay', 'Earth', 'Chicago')->getKeyStr();
     $users = $memcache->get($userKey);
-    if(!users) {
-          $users = query("select * from users where universe='MilkyWay' AND planet='Earth' AND 'city' => 'Chicago'");
-          $memcache->set($userKey, $users);
+    if (!$users) {
+        $users = query("select * from users where universe='MilkyWay' AND planet='Earth' AND city='Chicago'");
+        $memcache->set($userKey, $users);
     }
-    
+
     /* Invalidate them */
-    $universeTag = new Tag\Standard('universe', 'MilkyWay'); 
-    $universeTag->increment(); 
+    $universeTag = new StandardTag('universe', 'MilkyWay');
+    $universeTag->increment();
 
 
     //===============================
-    // Old Method
+    // Manual (no KeyRing) equivalent
     //===============================
-    $universeTag = new Tag\Constant("universe", "MilkyWay",5);
-    $worldTag = new Tag\Standard("planet", "Earth");
-    $cityTag = new Tag\Standard("city", "Chicago", null, new FragmentedKeys\CacheHandler\Memory());
-    $key = new Key\Standard("Users", array($universeTag, $worldTag, $cityTag); 
+    $universeTag = new ConstantTag("universe", "MilkyWay", 5);
+    $worldTag = new StandardTag("planet", "Earth");
+    $cityTag = new StandardTag("city", "Chicago", null, new MemoryHandler());
+    $key = new StandardKey("Users", [$universeTag, $worldTag, $cityTag]);
     $userKey = $key->getKeyStr();
     $users = $memcache->get($userKey);
-    if(!users) {
-          $users = query("select * from users where universe='MilkyWay' AND planet='Earth' AND 'city' => 'Chicago'");
-          $memcache->set($userKey, $users);
+    if (!$users) {
+        $users = query("select * from users where universe='MilkyWay' AND planet='Earth' AND city='Chicago'");
+        $memcache->set($userKey, $users);
     }
-    
+
     /* Invalidate them */
-    $universeTag->increment(); 
+    $universeTag->increment();
 ```
 
 *The ability to auto include params isnt fully backed into the config process yet but you can emulate it easily by extending the base keyring class and doing the following
 
 ```php
-class MyGames extends NoizuLabs\FragmentedKeys\KeyRing {
-    public getGameDescriptionKeyObj($gameId) {
+use NoizuLabs\FragmentedKeys\KeyInterface;
+use NoizuLabs\FragmentedKeys\KeyRing;
+
+class MyGames extends KeyRing
+{
+    public function getGameDescriptionKeyObj(string $gameId): KeyInterface
+    {
          /* Define Key in the usual manner  */
 
          /* . . . */
 
          $gameSiteId = $this->pimpleContainer['gameSite']; 
          $userId = $this->getUserId(); 
-         return $this->getKeyObj("GameDescription", array( $gameId, $gameSiteId, $userId, ... etc.));
+         return $this->getKeyObj("GameDescription", [$gameId, $gameSiteId, $userId]);
     }
 }
 

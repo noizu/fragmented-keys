@@ -1,1 +1,13 @@
+# Dependencies
 /vendor/
+
+# Tooling caches
+/.phpunit.cache/
+/.php-cs-fixer.cache
+
+# Test coverage artifacts
+/coverage/
+/coverage.out
+
+# composer.lock is intentionally committed (see README/CI): reproducible builds.
+# It is ignored by anyone installing this package as a dependency.
